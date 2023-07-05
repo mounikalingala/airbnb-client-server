@@ -3,7 +3,8 @@ const cors = require("cors")
 const mongoose = require("mongoose")
 const bcrypt = require("bcryptjs")
 const jwt = require("jsonwebtoken")
-const User=require("./models/user.js")
+const User = require("./models/user.js")
+const cookieParser=require("cookie-parser")
 require("dotenv").config()
 const app = express()
 
@@ -11,9 +12,10 @@ const bcryptSalt=bcrypt.genSaltSync(10)
 const jwtSecret="secrettoken"
 
 app.use(express.json())
+app.use(cookieParser())
 app.use(cors({
     credentials: true,
-    origin:"*"
+    origin:"http://localhost:5173"
 }))
 
 mongoose.connect(process.env.MONGO_URL)
@@ -38,15 +40,19 @@ app.post("/register", async(req, res) => {
 
 app.post("/login", async(req, res) => {
     const { email, password } = req.body
-    const userDoc = await User.findOne({ email })
+    const userDoc = await User.findOne({email})
     
     if (userDoc) {
         res.json("found")
         const passOk = bcrypt.compareSync(password, userDoc.password)
         if (passOk) {
-            jwt.sign({ email: userDoc.email, id: userDoc._id }, jwtSecret, {}, (err,token) => {
+            jwt.sign({
+                email: userDoc.email,
+                id: userDoc._id,
+                name: userDoc.name
+            }, jwtSecret, {}, (err, token) => {
                 if (err) throw err;
-                res.cookie("token", token).json("pass ok")
+                res.cookie("token", token).json(userDoc)
             })
             
         } else {
@@ -55,6 +61,20 @@ app.post("/login", async(req, res) => {
     } else {
         res.json("not found")
     }
+})
+
+app.get("/profile", (req, res) => {
+    const { token } = req.cookies
+    if (token) {
+        jwt.verify(token, jwtSecret, {}, (err, user) => {
+            if (err) throw err
+            
+            res.json(userD)
+        })
+    } else {
+        res.json(null)
+    }
+    res.json({token})
 })
 
 app.listen(4000)
