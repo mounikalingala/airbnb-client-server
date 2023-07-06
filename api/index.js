@@ -43,16 +43,14 @@ app.post("/login", async(req, res) => {
     const userDoc = await User.findOne({email})
     
     if (userDoc) {
-        res.json("found")
         const passOk = bcrypt.compareSync(password, userDoc.password)
         if (passOk) {
             jwt.sign({
                 email: userDoc.email,
                 id: userDoc._id,
-                name: userDoc.name
             }, jwtSecret, {}, (err, token) => {
                 if (err) throw err;
-                res.cookie("token", token).json(userDoc)
+                res.cookie('token', token).json(userDoc);
             })
             
         } else {
@@ -66,10 +64,10 @@ app.post("/login", async(req, res) => {
 app.get("/profile", (req, res) => {
     const { token } = req.cookies
     if (token) {
-        jwt.verify(token, jwtSecret, {}, (err, user) => {
+        jwt.verify(token, jwtSecret, {}, async(err, userData) => {
             if (err) throw err
-            
-            res.json(userD)
+            const { name, email, _id } = await User.findById(userData.id)
+            res.json( {name, email, _id})
         })
     } else {
         res.json(null)
