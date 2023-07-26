@@ -4,7 +4,9 @@ const mongoose = require("mongoose")
 const bcrypt = require("bcryptjs")
 const jwt = require("jsonwebtoken")
 const User = require("./models/user.js")
-const cookieParser=require("cookie-parser")
+const cookieParser = require("cookie-parser")
+const imageDownloader=require("image-downloader")
+
 require("dotenv").config()
 const app = express()
 
@@ -51,8 +53,7 @@ app.post("/login", async(req, res) => {
             }, jwtSecret, {}, (err, token) => {
                 if (err) throw err;
                 res.cookie('token', token).json(userDoc);
-            })
-            
+            })           
         } else {
             res.status(422).json("pass not ok")
         }
@@ -72,7 +73,21 @@ app.get("/profile", (req, res) => {
     } else {
         res.json(null)
     }
-    res.json({token})
 })
 
-app.listen(4000)
+app.post("/logout", (req, res) => {
+    res.cookie('token','').json(true)
+})
+
+console.log(__dirname)
+app.post("/upload-by-link", async(req, res) => {
+    const { link } = req.body
+    const newName ='photo' + Date.now() + '.jpg';
+    await imageDownloader.image({
+        url: link,
+        dest:__dirname+'/uploads/'+newName
+    })
+res.json(newName)
+})
+
+app.listen(4000,()=>console.log("connected"))
